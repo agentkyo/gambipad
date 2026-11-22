@@ -40,6 +40,10 @@ def find_devices(extra=()) -> list[dict]:
         # Windows lists one entry per HID collection; keep the gamepad one.
         if info.get("usage_page") not in (0, 1, None):
             continue
+        # ViGEmBus virtual pads (ours included) carry a revision in their HID
+        # path; real USB and Bluetooth pads do not. Never read a virtual pad.
+        if b"&rev_" in bytes(info["path"]).lower():
+            continue
         entry = dict(info)
         entry["model"] = wanted[key]
         found.setdefault(info["path"], entry)

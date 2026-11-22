@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -77,7 +78,8 @@ class _WindowsHider:
     def hide(self, vid: int, pid: int) -> str:
         if not self.available:
             return f"HidHide is not installed, games will see both controllers. Get it from {HIDHIDE_URL}"
-        needle = f"VID_{vid:04X}&PID_{pid:04X}"
+        # USB: VID_054C&PID_09CC   Bluetooth: VID&0002054C_PID&09CC
+        needle = re.compile(rf"VID[_&](?:[0-9A-F]{{4}})?{vid:04X}[_&]PID[_&]{pid:04X}")
         try:
             groups = json.loads(self._run("--dev-gaming") or "[]")
             state = self._run("--cloak-state", "--dev-list")
@@ -87,9 +89,11 @@ class _WindowsHider:
         wanted: list[str] = []
         for group in groups:
             for device in group.get("devices", []):
+                if not device.get("baseContainerDeviceInstancePath"):
+                    continue  # no parent bus: a virtual pad (ours or another tool's), never hide it
                 for key in ("deviceInstancePath", "baseContainerDeviceInstancePath"):
                     path = device.get(key) or ""
-                    if needle in path.upper() and path not in wanted:
+                    if needle.search(path.upper()) and path not in wanted:
                         wanted.append(path)
         if not wanted:
             return "HidHide does not list the controller"

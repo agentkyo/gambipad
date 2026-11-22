@@ -66,6 +66,34 @@ def test_state_survives_a_crash(hider):
     assert not (home / "hidhide-state.json").exists()
 
 
+def test_bluetooth_paths_match_and_virtual_pads_are_spared(hider, monkeypatch):
+    h, calls, _ = hider
+    bluetooth = json.dumps(
+        [
+            {
+                "devices": [
+                    {  # our own ViGEm DualShock 4: no parent bus
+                        "deviceInstancePath": "HID\\VID_054C&PID_09CC&REV_0100\\2&1",
+                        "baseContainerDeviceInstancePath": "",
+                    },
+                    {
+                        "deviceInstancePath": "HID\\{00001124-0000-1000-8000-00805f9b34fb}_VID&0002054c_PID&09cc\\9&3",
+                        "baseContainerDeviceInstancePath": "BTHENUM\\{00001124-0000-1000-8000-00805F9B34FB}_VID&0002054C_PID&09CC\\8&1",
+                    },
+                ]
+            }
+        ]
+    )
+    original = hide._WindowsHider._run
+    monkeypatch.setattr(
+        hide._WindowsHider, "_run", lambda self, *a: bluetooth if a == ("--dev-gaming",) else original(self, *a)
+    )
+    assert h.hide(0x054C, 0x09CC) == "hidden"
+    args = calls[-1]
+    hidden = [args[i + 1] for i, a in enumerate(args) if a == "--dev-hide"]
+    assert len(hidden) == 2 and all("0002054" in p.upper() for p in hidden)
+
+
 def test_unknown_pad_is_reported(hider):
     h, calls, _ = hider
     assert "does not list" in h.hide(0x1111, 0x2222)
