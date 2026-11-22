@@ -168,6 +168,9 @@ class _MacroRun:
 class Engine:
     def __init__(self, profile: dict | None = None, clock: Callable[[], float] = time.monotonic):
         self.clock = clock
+        #: Human readable notes about what just happened (macro started...).
+        #: The driver drains this list into its log.
+        self.events: list[str] = []
         self.set_profile(profile)
 
     def set_profile(self, profile: dict | None) -> None:
@@ -282,6 +285,10 @@ class Engine:
                 running.stop = True
             return
         self._runs[source] = _MacroRun(ops, mode, now)
+        trigger = source
+        if source.startswith("combo:"):
+            trigger = " + ".join(self.profile["combos"][int(source[6:])]["buttons"])
+        self.events.append(f"macro '{name}' started by {trigger}")
 
     # ---------------------------------------------------------------- process
 

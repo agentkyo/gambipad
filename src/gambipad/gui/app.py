@@ -153,6 +153,14 @@ class MainWindow(QMainWindow):
     def _log(self, text: str) -> None:  # called from the driver thread
         self._logs.append(f"{time.strftime('%H:%M:%S')}  {text}")
         self._log_dirty = True
+        try:  # also on disk, so a problem can be looked at after the fact
+            path = profiles.config_dir() / "gambipad.log"
+            if path.exists() and path.stat().st_size > 1_000_000:
+                path.unlink()
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')}  {text}\n")
+        except OSError:
+            pass
 
     def _show(self) -> None:
         self.showNormal()

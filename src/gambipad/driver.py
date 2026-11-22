@@ -212,6 +212,8 @@ class Driver:
 
                 frame = self.engine.process(self.raw)
                 self.frame = frame
+                while self.engine.events:
+                    self.log(self.engine.events.pop(0))
                 pad.apply(frame.pad)
                 keymouse.apply(frame)
 
