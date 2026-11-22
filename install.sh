@@ -92,19 +92,21 @@ install_system_packages() {
     case "$ID_ALL" in
         *" arch "*|*" cachyos "*)
             say "Installing system packages with pacman"
-            as_root pacman -S --needed --noconfirm python python-pip gcc linux-api-headers libxcb xcb-util-cursor libxkbcommon || warn "pacman step failed"
+            as_root pacman -S --needed --noconfirm python python-pip gcc pkgconf linux-api-headers libusb systemd-libs \
+                glib2 libglvnd fontconfig freetype2 dbus libxcb xcb-util-cursor libxkbcommon libxkbcommon-x11 || warn "pacman step failed"
             ;;
         *" debian "*|*" ubuntu "*)
             say "Installing system packages with apt"
             as_root apt-get update -qq || true
             as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-                python3 python3-venv python3-dev gcc linux-libc-dev \
+                python3 python3-venv python3-dev gcc linux-libc-dev pkg-config libusb-1.0-0-dev libudev-dev libglib2.0-0 \
                 libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 libdbus-1-3 libfontconfig1 libxcb-cursor0 \
                 || warn "apt step failed"
             ;;
         *" fedora "*|*" rhel "*)
             say "Installing system packages with dnf"
-            as_root dnf install -y python3 python3-pip python3-devel gcc kernel-headers \
+            as_root dnf install -y python3 python3-pip python3-devel gcc kernel-headers pkgconf-pkg-config \
+                libusb1-devel systemd-devel glib2 dbus-libs libglvnd-egl libglvnd-glx \
                 libxkbcommon libxkbcommon-x11 xcb-util-cursor mesa-libEGL fontconfig || warn "dnf step failed"
             ;;
         *)
@@ -135,12 +137,23 @@ PIP="$VENV/bin/pip"
 "$PIP" install --quiet --upgrade pip
 
 say "Installing GambiPad and its libraries (this downloads about 200 MB)"
-"$PIP" install --quiet hidapi PySide6
+"$PIP" install --quiet PySide6
+if ! "$PIP" install --quiet hidapi; then
+    echo >&2
+    echo "Could not install the 'hidapi' library for $("$PYTHON" -V 2>&1)." >&2
+    echo "There is no prebuilt package for this Python version and it could not be compiled here." >&2
+    echo "On an image-based system (Bazzite, Silverblue) run this installer inside a distrobox," >&2
+    echo "or install a compiler, pkg-config, libusb and libudev headers and try again." >&2
+    exit 1
+fi
 # python-evdev compiles against the kernel headers. Where there is no compiler
 # (Bazzite and friends) the prebuilt evdev-binary package provides the same module.
 if ! "$PIP" install --quiet evdev 2>/dev/null; then
     warn "could not compile evdev, using the prebuilt evdev-binary package"
-    "$PIP" install --quiet evdev-binary
+    if ! "$PIP" install --quiet evdev-binary; then
+        echo "Could not install 'evdev' for $("$PYTHON" -V 2>&1): no compiler and no prebuilt package." >&2
+        exit 1
+    fi
 fi
 "$PIP" install --quiet --no-deps "$SOURCE"
 
@@ -149,7 +162,7 @@ ln -sf "$VENV/bin/gambipad" "$BIN/gambipad"
 # ------------------------------------------------------------ desktop entry
 
 mkdir -p "$(dirname "$DESKTOP")" "$(dirname "$ICON")"
-"$VENV/bin/gambipad" icon "$ICON" --size 256 >/dev/null 2>&1 || warn "could not write the icon"
+"$VENV/bin/gambipad" icon "$ICON" --size 256 || warn "could not write the icon (a Qt system library is probably missing, see the error above)"
 cat > "$DESKTOP" <<EOF
 [Desktop Entry]
 Type=Application

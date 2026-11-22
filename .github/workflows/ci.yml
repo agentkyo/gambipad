@@ -53,9 +53,11 @@ jobs:
             image: archlinux:latest
             prepare: pacman -Syu --noconfirm tar gzip
             args: ""
-          - name: No compiler, no package manager (Bazzite-like)
-            image: fedora:latest
-            prepare: dnf install -y tar gzip python3 python3-pip libxkbcommon mesa-libEGL libglvnd-glx fontconfig
+          # Bazzite cannot be run in a container; this is the closest stand-in:
+          # the Fedora release it is built on, no compiler, no system packages.
+          - name: No compiler, no package manager (Bazzite-like, Fedora 42)
+            image: fedora:42
+            prepare: dnf install -y tar gzip python3 python3-pip glib2 dbus-libs libxkbcommon libxkbcommon-x11 xcb-util-cursor mesa-libEGL libglvnd-egl libglvnd-glx fontconfig
             args: "--no-system"
     name: "install.sh: ${{ matrix.name }}"
     runs-on: ubuntu-latest
@@ -67,10 +69,12 @@ jobs:
         run: GAMBIPAD_SOURCE="$PWD" bash install.sh --autostart ${{ matrix.args }}
       - name: Check the installation
         run: |
+          set -x
           ~/.local/bin/gambipad --version
+          QT_QPA_PLATFORM=offscreen ~/.local/share/gambipad/venv/bin/python -c "import gambipad.gui.app, evdev, hid; print('imports ok')"
           ~/.local/bin/gambipad doctor
           test -s ~/.local/share/icons/hicolor/256x256/apps/gambipad.png
           grep -q minimized ~/.config/autostart/gambipad.desktop
-          QT_QPA_PLATFORM=offscreen ~/.local/share/gambipad/venv/bin/python -c "import gambipad.gui.app, evdev, hid; print('imports ok')"
+          test -x ~/.local/share/applications/gambipad.desktop || test -f ~/.local/share/applications/gambipad.desktop
       - name: Uninstall
         run: bash install.sh --uninstall ${{ matrix.args }} && test ! -e ~/.local/share/gambipad
