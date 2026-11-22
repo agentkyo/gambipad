@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QColorDialog,
     QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QGridLayout,
@@ -586,8 +587,27 @@ class MainWindow(QMainWindow):
 
             add_row = QHBoxLayout()
             kind = QComboBox()
-            for key, label in (("tap", tr("Tap")), ("press", tr("Hold down")), ("release", tr("Release")), ("wait", tr("Wait"))):
+            for key, label in (
+                ("tap", tr("Tap")),
+                ("press", tr("Hold down")),
+                ("release", tr("Release")),
+                ("wait", tr("Wait")),
+                ("stick", tr("Move stick")),
+                ("stick_off", tr("Let go of stick")),
+            ):
                 kind.addItem(label, key)
+            side = QComboBox()
+            side.addItem(tr("Left stick"), "left")
+            side.addItem(tr("Right stick"), "right")
+            axes = []
+            for prefix in ("X ", "Y "):
+                spin = QDoubleSpinBox()
+                spin.setRange(-1.0, 1.0)
+                spin.setSingleStep(0.05)
+                spin.setDecimals(2)
+                spin.setPrefix(prefix)
+                spin.setToolTip(tr("X: -1 left, +1 right. Y: -1 up, +1 down."))
+                axes.append(spin)
             picker = TargetPicker()
             ms = QSpinBox()
             ms.setRange(20, 60000)
@@ -596,12 +616,20 @@ class MainWindow(QMainWindow):
             plus = QPushButton(tr("Add step"))
 
             def sync():
-                picker.setEnabled(kind.currentData() != "wait")
-                ms.setEnabled(kind.currentData() in ("tap", "wait"))
+                what = kind.currentData()
+                picker.setVisible(what in ("tap", "press", "release"))
+                ms.setVisible(what in ("tap", "wait"))
+                side.setVisible(what in ("stick", "stick_off"))
+                for spin in axes:
+                    spin.setVisible(what == "stick")
 
             def add_step():
                 what = kind.currentData()
-                if what == "wait":
+                if what == "stick":
+                    step = {"stick": side.currentData(), "x": axes[0].value(), "y": axes[1].value()}
+                elif what == "stick_off":
+                    step = {"stick": side.currentData(), "off": True}
+                elif what == "wait":
                     step = {"wait": ms.value()}
                 elif what == "tap":
                     step = {"tap": picker.value(), "ms": ms.value()}
@@ -618,6 +646,9 @@ class MainWindow(QMainWindow):
             add_row.addWidget(picker, 1)
             box.addLayout(add_row)
             add_row2 = QHBoxLayout()
+            add_row2.addWidget(side)
+            add_row2.addWidget(axes[0])
+            add_row2.addWidget(axes[1])
             add_row2.addWidget(ms)
             add_row2.addWidget(plus)
             add_row2.addStretch(1)
@@ -660,6 +691,11 @@ class MainWindow(QMainWindow):
     def _step_label(self, step: dict) -> str:
         if "wait" in step:
             return f"{tr('Wait')} {step['wait']} ms"
+        if "stick" in step:
+            name = tr("Left stick") if step["stick"] == "left" else tr("Right stick")
+            if step.get("off"):
+                return f"{tr('Let go of stick')}: {name}"
+            return f"{tr('Move stick')}: {name}  X {step['x']:+.2f}  Y {step['y']:+.2f}"
         if "tap" in step:
             return f"{tr('Tap')} {target_label(step['tap'])} ({step['ms']} ms)"
         if "press" in step:

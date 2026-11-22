@@ -223,6 +223,37 @@ def test_macro_press_left_down_is_released_at_end():
     assert engine.process(press()).keys == frozenset()
 
 
+def test_macro_takes_over_a_stick_and_gives_it_back():
+    steps = [
+        {"stick": "left", "x": 0.8, "y": -0.5},
+        {"wait": 100},
+        {"tap": "pad:circle", "ms": 100},
+        {"stick": "left", "off": True},
+        {"wait": 50},
+    ]
+    clock = Clock()
+    engine = Engine(macro_profile("once", steps), clock)
+    user = press("triangle", lx=-1.0, ly=1.0, rx=0.5)
+    first = engine.process(user)
+    assert (first.pad.lx, first.pad.ly) == (0.8, -0.5)
+    assert first.pad.rx == pytest.approx(0.5, abs=0.05)  # the other stick stays with the player
+    clock.now += 0.15
+    aiming = engine.process(press(lx=-1.0, ly=1.0))
+    assert (aiming.pad.lx, aiming.pad.ly) == (0.8, -0.5) and "circle" in aiming.pad.buttons
+    clock.now += 0.1
+    released = engine.process(press(lx=-1.0, ly=0.0))
+    assert released.pad.lx == pytest.approx(-1.0) and "circle" not in released.pad.buttons
+    clock.now += 0.2
+    assert engine.process(press()).pad.lx == 0.0
+
+
+def test_stick_steps_are_normalized():
+    clean = normalize(
+        {"macros": {"m": {"steps": [{"stick": "left", "x": 5, "y": "a"}, {"stick": "up", "x": 1}, {"stick": "right", "off": 1}]}}}
+    )
+    assert clean["macros"]["m"]["steps"] == [{"stick": "left", "x": 1.0, "y": 0.0}, {"stick": "right", "off": True}]
+
+
 # ---------------------------------------------------------- sticks, triggers
 
 STICK = {"deadzone": 0.1, "outer": 1.0, "curve": 1.0, "invert_x": False, "invert_y": False}

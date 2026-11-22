@@ -108,6 +108,8 @@ def compile_macro(steps: list[dict]) -> list[tuple[str, object]]:
     for step in steps:
         if "wait" in step:
             ops.append(("wait", step["wait"] / 1000.0))
+        elif "stick" in step:
+            ops.append(("stick", (step["stick"], None if step.get("off") else (step["x"], step["y"]))))
         elif "tap" in step:
             ops += [("press", step["tap"]), ("wait", step["ms"] / 1000.0), ("release", step["tap"])]
         elif "press" in step:
@@ -124,6 +126,7 @@ class _MacroRun:
         self.index = 0
         self.wake = now
         self.held: set[str] = set()
+        self.sticks: dict[str, tuple[float, float]] = {}  # stick positions the macro is holding
         self.stop = False  # asked to finish (button released / toggled off)
         self.done = not ops
         total = sum(v for op, v in ops if op == "wait")
@@ -135,6 +138,7 @@ class _MacroRun:
             budget -= 1
             if self.index >= len(self.ops):
                 self.held.clear()
+                self.sticks.clear()
                 if self.mode == "once" or self.stop:
                     self.done = True
                     break
@@ -147,11 +151,17 @@ class _MacroRun:
                 self.held.add(value)
             elif op == "release":
                 self.held.discard(value)
+            elif op == "stick":
+                if value[1] is None:
+                    self.sticks.pop(value[0], None)
+                else:
+                    self.sticks[value[0]] = value[1]
             else:
                 self.wake += value
         if self.stop and self.mode != "once":
             # Looping macros end at once so nothing stays stuck down.
             self.held.clear()
+            self.sticks.clear()
             self.done = True
 
 
@@ -169,6 +179,7 @@ class Engine:
         self._runs: dict[str, _MacroRun] = {}
         self._prev_targets: set[str] = set()
         self._prev_touch = None
+        self._stick_override: dict[str, tuple[float, float]] = {}
         self._touch_seen: dict[int, tuple[tuple[int, int], float]] = {}
 
     # ------------------------------------------------------------------ steps
@@ -252,9 +263,11 @@ class Engine:
                 continue
             hold(action["to"], source)
 
+        self._stick_override = {}
         for source, run in list(self._runs.items()):
             run.advance(now)
             hold(run.held, f"macro:{source}")
+            self._stick_override.update(run.sticks)
             if run.done:
                 del self._runs[source]
         return targets
@@ -294,6 +307,9 @@ class Engine:
         right = shape_stick(raw.rx, raw.ry, sticks["right"])
         if sticks["swap"]:
             left, right = right, left
+        # A running macro can take over a stick (aiming a kick, for instance).
+        left = self._stick_override.get("left", left)
+        right = self._stick_override.get("right", right)
 
         analog = {}
         for side, value in (("l2", raw.l2), ("r2", raw.r2)):

@@ -109,6 +109,12 @@ def normalize_steps(steps) -> list[dict]:
             continue
         if "wait" in step:
             out.append({"wait": int(_num(step["wait"], 50, 0, 60000))})
+        elif step.get("stick") in ("left", "right"):
+            if step.get("off"):
+                out.append({"stick": step["stick"], "off": True})
+            else:
+                x, y = _num(step.get("x"), 0.0, -1.0, 1.0), _num(step.get("y"), 0.0, -1.0, 1.0)
+                out.append({"stick": step["stick"], "x": round(x, 3), "y": round(y, 3)})
         elif is_target(step.get("tap")):
             out.append({"tap": step["tap"], "ms": int(_num(step.get("ms"), 50, 20, 10000))})
         elif is_target(step.get("press")):
