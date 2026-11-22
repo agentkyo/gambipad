@@ -23,11 +23,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install hidapi PySide6 pytest pyinstaller
           pip install -e . --no-deps
-          # vgamepad's setup opens the interactive ViGEmBus installer, which
-          # would hang the runner. Only its package folder is needed, so it is
-          # unpacked from the source archive straight into site-packages.
-          pip download vgamepad==0.2.0 --no-deps --no-binary :all: -d vg
-          tar -xzf (Get-ChildItem vg\*.tar.gz).FullName -C vg
+          # vgamepad's setup.py opens the interactive ViGEmBus installer, which
+          # hangs a runner - even `pip download` runs it. Only the package
+          # folder is needed, so the source archive is fetched directly from
+          # PyPI and unpacked straight into site-packages.
+          New-Item -ItemType Directory vg | Out-Null
+          $meta = Invoke-RestMethod https://pypi.org/pypi/vgamepad/0.2.0/json
+          $sdist = $meta.urls | Where-Object packagetype -eq sdist | Select-Object -First 1
+          Invoke-WebRequest $sdist.url -OutFile vg\vgamepad.tar.gz
+          if ((Get-FileHash vg\vgamepad.tar.gz -Algorithm SHA256).Hash -ne $sdist.digests.sha256) { throw "vgamepad archive hash mismatch" }
+          tar -xzf vg\vgamepad.tar.gz -C vg
           $site = python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
           Copy-Item (Get-ChildItem vg -Directory | Select-Object -First 1 | Join-Path -ChildPath vgamepad) $site -Recurse
           python -c "import os; assert os.path.exists(os.path.join(r'$site', 'vgamepad', 'win', 'vigem', 'client', 'x64', 'ViGEmClient.dll'))"
