@@ -32,6 +32,9 @@ O controle real fica escondido dos jogos, que só enxergam o corrigido.
 
 - **Teste e correção de botões fantasmas**: aperte cada botão uma vez e o GambiPad
   descobre quais arrastam um segundo sinal junto, e passa a filtrá-lo.
+- **Detecção de firmware defeituoso**: avisa quando o controle corrompe os próprios
+  relatórios (o clone acima repete um byte a cada quatro e perde o eixo horizontal
+  do analógico direito) e desativa as entradas que não são confiáveis.
 - **Remapeamento** de qualquer botão para outro botão, teclas do teclado ou mouse.
 - **Turbo**, **alternar** e **combinações** (vários botões segurados disparam uma ação).
 - **Macros**: sequências de apertos e pausas, tocadas uma vez, enquanto segura, ou alternadas.

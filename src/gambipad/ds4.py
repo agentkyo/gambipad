@@ -114,6 +114,25 @@ def parse_report(data: bytes) -> PadState | None:
     )
 
 
+def is_smeared(data: bytes) -> bool:
+    """True when a USB report shows the "every fourth byte is a copy" defect.
+
+    Seen on a 054C:09CC clone: in every report, byte 4k+3 repeats byte 4k+2.
+    That overwrites the right stick X axis (with left stick Y), the PS and
+    touchpad-click bits (with L1 and R1), the high byte of the timestamp and
+    the touch data. One report can match by chance on a healthy pad, so callers
+    must require a long unbroken run - the timestamp alone breaks it at once.
+    """
+    if len(data) < 44 or data[0] != USB_INPUT_ID:
+        return False
+    return all(data[i] == data[i + 1] for i in range(2, 44, 4))
+
+
+def desmear(state: PadState) -> PadState:
+    """Remove what a smeared report cannot be trusted for."""
+    return state.with_(buttons=state.buttons - {"ps", "touchpad"}, rx=0.0, touches=())
+
+
 def _byte(value: float) -> int:
     return max(0, min(255, int(round(value))))
 

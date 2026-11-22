@@ -851,6 +851,15 @@ class MainWindow(QMainWindow):
             self.status.setText(f"🟡 {tr('Looking for a controller… plug it in.')}")
 
         notes = []
+        defect = getattr(driver, "defect", "")
+        if defect == "smear":
+            notes.append(
+                tr(
+                    "DEFECTIVE CONTROLLER: it corrupts its own data (every fourth byte repeats the one before). "
+                    "Right stick left/right, PS and touchpad never arrive, so they are disabled. "
+                    "Try another cable or USB port, or Bluetooth."
+                )
+            )
         if driver.output_note:
             notes.append(driver.output_note)
         if driver.status == "running" and driver.hide_note not in ("hidden", "not hidden", ""):
@@ -862,7 +871,7 @@ class MainWindow(QMainWindow):
         text = "  ·  ".join(notes)
         if text != self.note.text():
             self.note.setText(text)
-            self.note.setObjectName("warn" if driver.output_note else "hint")
+            self.note.setObjectName("warn" if driver.output_note or defect else "hint")
             self.note.setStyleSheet("")  # re-polish for the new object name
 
         if raw is None:

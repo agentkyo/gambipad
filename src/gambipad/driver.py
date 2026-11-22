@@ -21,6 +21,7 @@ from .state import Frame, PadState
 READ_TIMEOUT_MS = 20
 RUMBLE_REFRESH = 0.5  # resend while a motor is on, some pads time out
 LIGHT_REFRESH = 0.05  # animation step for the light bar
+SMEAR_REPORTS = 500  # unbroken run of corrupted reports before we call it a defect
 
 
 def find_devices(extra=()) -> list[dict]:
@@ -58,6 +59,7 @@ class Driver:
         self.reports_per_second = 0
         self.output_note = ""
         self.hide_note = ""
+        self.defect = ""  # "smear" when the pad corrupts its own reports
         self.capture: list | None = None
 
         self._pending: dict | None = None
@@ -151,6 +153,8 @@ class Driver:
         sent = None
         sent_at = 0.0
         count, count_from = 0, time.monotonic()
+        smear_run = 0
+        self.defect = ""
         try:
             kind = self.engine.profile["output"]
             pad = self._make_pad(kind)
@@ -178,6 +182,16 @@ class Driver:
                     if state is not None:
                         if data[0] == ds4.BT_INPUT_ID:
                             self.bluetooth = True
+                        if self.defect != "smear":
+                            smear_run = smear_run + 1 if ds4.is_smeared(data) else 0
+                            if smear_run >= SMEAR_REPORTS:
+                                self.defect = "smear"
+                                self.log(
+                                    "defective controller: every fourth byte of its reports is a copy of the one before. "
+                                    "Right stick X, PS, touchpad click and touch data never arrive and are ignored."
+                                )
+                        if self.defect == "smear":
+                            state = ds4.desmear(state)
                         self.raw = state
                         count += 1
                         if self.capture is not None:

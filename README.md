@@ -32,6 +32,9 @@ The real controller is hidden from games, so they only see the corrected one.
 
 - **Ghost button test and fix** - press each button once, GambiPad finds the ones
   that drag a second signal along and filters it out.
+- **Defective firmware detection** - warns when a controller corrupts its own
+  reports (the clone above repeats every fourth byte, losing the right stick's
+  horizontal axis) and disables the inputs that cannot be trusted.
 - **Remap** every button to another button, keyboard keys or mouse buttons.
 - **Turbo**, **toggle**, **combos** (several buttons held together fire an action).
 - **Macros** - sequences of presses and pauses, played once, while held, or toggled.

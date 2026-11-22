@@ -77,6 +77,22 @@ def test_unknown_and_short_reports():
     assert short is not None and short.battery is None
 
 
+def test_smear_detection_and_cleanup():
+    # Captured from the defective clone: bytes 4k+3 repeat bytes 4k+2.
+    bad = bytes.fromhex(
+        "01808080800800000000" "0c0c00eeffffffeaffffff1220200600000000001a1a000100004210" "0000a7b33a3a"
+    ).ljust(64, b"\0")
+    assert ds4.is_smeared(bad)
+    good = bytearray(bad)
+    good[11] = 0x55  # a healthy timestamp high byte differs from the low one
+    assert not ds4.is_smeared(bytes(good))
+    assert not ds4.is_smeared(bad[:20])
+
+    mirrored = bytearray(usb_report(b2=255, b3=255, b6=0x01, b7=0x01))
+    state = ds4.desmear(ds4.parse_report(bytes(mirrored)))
+    assert state.buttons == {"l1"} and state.rx == 0.0 and state.ly == 1.0
+
+
 def test_usb_output_layout():
     out = ds4.build_output(weak=10, strong=200, rgb=(1, 2, 3), flash=(4, 5))
     assert len(out) == 32

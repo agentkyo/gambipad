@@ -162,6 +162,11 @@ PT = {
     "battery": "bateria",
     "Looking for a controller… plug it in.": "Procurando um controle… conecte-o.",
     "The real controller is hidden from games. If a game still sees two controllers, unplug and replug it once.": "O controle real está escondido dos jogos. Se um jogo ainda enxergar dois controles, desconecte e reconecte o cabo uma vez.",
+    "DEFECTIVE CONTROLLER: it corrupts its own data (every fourth byte repeats the one before). "
+    "Right stick left/right, PS and touchpad never arrive, so they are disabled. "
+    "Try another cable or USB port, or Bluetooth.": "CONTROLE COM DEFEITO: ele corrompe os próprios dados (um byte a cada quatro repete o anterior). "
+    "O analógico direito para os lados, o PS e o touchpad nunca chegam, então ficam desativados. "
+    "Tente outro cabo ou porta USB, ou o Bluetooth.",
     "keys": "teclas",
     "mouse": "mouse",
     "GambiPad is already running (look in the system tray).": "O GambiPad já está rodando (veja na bandeja do sistema).",
