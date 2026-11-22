@@ -177,6 +177,21 @@ def cmd_off(args) -> int:
     return 0 if all(done) else 1
 
 
+def cmd_icon(args) -> int:
+    """Write the application icon to a file (used by the installers)."""
+    import os
+
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtGui import QGuiApplication
+
+    from .gui.app import icon_pixmap
+
+    app = QGuiApplication.instance() or QGuiApplication([])
+    ok = icon_pixmap(args.size).save(args.path)
+    del app
+    return 0 if ok else 1
+
+
 def cmd_unhide(args) -> int:
     from .hide import create_hider
 
@@ -215,6 +230,10 @@ def main(argv=None) -> int:
     sub.add_parser("rumble", help="test both rumble motors").set_defaults(func=cmd_rumble)
     sub.add_parser("doctor", help="check the system requirements").set_defaults(func=cmd_doctor)
     sub.add_parser("off", help="switch a Bluetooth controller off").set_defaults(func=cmd_off)
+    p = sub.add_parser("icon", help=argparse.SUPPRESS)
+    p.add_argument("path")
+    p.add_argument("--size", type=int, default=256)
+    p.set_defaults(func=cmd_icon)
     sub.add_parser("unhide", help="make the real controller visible again after a crash").set_defaults(func=cmd_unhide)
     args = parser.parse_args(argv)
     if getattr(args, "seconds", 0) and args.command == "run":

@@ -5,7 +5,7 @@ Windows e Linux. Sem software do fabricante.
 
 [English](README.md)
 
-![Janela do GambiPad](docs/screenshot-botoes.png)
+![Janela do GambiPad](docs/screenshots/pt-BR/buttons.png)
 
 > *Gambiarra*: o conserto esperto que faz funcionar o que não devia.
 > É isso que este projeto faz pelos controles genéricos.
@@ -37,7 +37,8 @@ O controle real fica escondido dos jogos, que só enxergam o corrigido.
   do analógico direito) e desativa as entradas que não são confiáveis.
 - **Remapeamento** de qualquer botão para outro botão, teclas do teclado ou mouse.
 - **Turbo**, **alternar** e **combinações** (vários botões segurados disparam uma ação).
-- **Macros**: sequências de apertos e pausas, tocadas uma vez, enquanto segura, ou alternadas.
+- **Macros**: sequências de apertos, movimentos dos analógicos e pausas, tocadas uma vez, enquanto segura, ou alternadas.
+- **Desligar o controle** pela janela ou pela bandeja (Bluetooth).
 - **Analógicos**: zona morta, limite externo, curva de resposta, inversão, troca.
   **Gatilhos**: zona morta, curso e gatilho sensível.
 - **Barra de luz**: cor fixa, nível da bateria, arco-íris ou desligada.
@@ -47,50 +48,83 @@ O controle real fica escondido dos jogos, que só enxergam o corrigido.
 - Visualização ao vivo do que o controle envia e do que o jogo recebe.
 - Interface em português e inglês.
 
+## Capturas de tela
+
+| Analógicos e gatilhos | Barra de luz e vibração |
+|---|---|
+| ![Analógicos](docs/screenshots/pt-BR/sticks.png) | ![Luz](docs/screenshots/pt-BR/light.png) |
+
+| Macros e combinações | Teste de botões fantasmas |
+|---|---|
+| ![Macros](docs/screenshots/pt-BR/macros.png) | ![Diagnóstico](docs/screenshots/pt-BR/diagnose.png) |
+
+As imagens mostram a janela real alimentada por um controle simulado.
+
 ## Situação
 
 Versão 0.1: software novo. O que foi testado de verdade:
 
 | | Situação |
 |---|---|
-| Windows 11, USB, clone `054C:09CC` | Testado em hardware real |
+| Windows 11, USB e Bluetooth, clone `054C:09CC` | Testado em hardware real |
 | Leitura de botões, analógicos, gatilhos e bateria | Testado |
 | Detecção e filtro de botões fantasmas | Testado |
 | Controle virtual Xbox 360 (ViGEmBus) | Testado |
 | Esconder o controle real (HidHide) | Testado |
 | Vibração e barra de luz por USB | Testado |
 | Controle virtual DualShock 4 | Escrito, pouco testado |
-| Bluetooth | Escrito a partir da documentação do protocolo, **não testado** |
-| Linux (uinput) | Escrito, **ainda não testado em hardware** |
+| Bluetooth: leitura, esconder o controle real, desligar | Testado |
+| Bluetooth: barra de luz e vibração | Escrito, **não confirmado** |
+| Linux (uinput) | Instalador testado automaticamente; driver **ainda não testado em hardware** |
 
 Relatos de outros controles e do Linux são muito bem-vindos: abra uma issue.
 
 ## Instalação
 
-Requer Python 3.11 ou mais novo.
-
 ### Windows
 
-1. Instale o [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases/latest) (cria o controle virtual).
-2. Instale o [HidHide](https://github.com/nefarius/HidHide/releases/latest) (esconde o controle real dos jogos) e reinicie.
-3. Instale o GambiPad:
+Baixe o **GambiPad-Setup** na [última versão](https://github.com/agentkyo/gambipad/releases/latest)
+e execute. Ele instala só para o seu usuário, sem pedir administrador, e pode iniciar
+o GambiPad junto com o Windows. Dois drivers são necessários, e o instalador oferece
+abrir as páginas de download quando eles faltam:
 
-```
-pip install git+https://github.com/agentkyo/gambipad
-gambipad
-```
+- [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases/latest) cria o controle virtual.
+- [HidHide](https://github.com/nefarius/HidHide/releases/latest) esconde o controle real dos jogos (reinicie depois de instalar).
+
+O executável não tem assinatura digital, então o SmartScreen pede confirmação na
+primeira vez ("Mais informações" e depois "Executar assim mesmo"). Um zip portátil é
+publicado ao lado do instalador.
 
 ### Linux
 
 ```
+curl -fsSL https://raw.githubusercontent.com/agentkyo/gambipad/main/install.sh | bash
+```
+
+| Distribuição | Como o instalador trata |
+|---|---|
+| Arch, **CachyOS** | `pacman` para as ferramentas de compilação e bibliotecas do Qt |
+| **Ubuntu**, **Zorin OS**, Debian | `apt` |
+| **Fedora** | `dnf` |
+| **Bazzite**, Silverblue, Kinoite | sistema por imagem: nada é adicionado ao sistema, usa pacotes Python prontos |
+
+O GambiPad vai para um ambiente Python próprio em `~/.local/share/gambipad`, com
+entrada no menu e o comando `gambipad` em `~/.local/bin`. O único passo que pede a
+sua senha é a regra do udev, que dá ao seu usuário acesso ao controle (hidraw) e ao
+`/dev/uinput`. Opções: `--autostart` (inicia com a sessão), `--no-system` (nunca pede
+senha), `--uninstall`.
+
+O instalador é executado do zero em imagens Ubuntu, Fedora e Arch a cada mudança.
+O GambiPad em si ainda não foi usado com um controle no Linux.
+
+### Com pip (qualquer sistema, Python 3.11+)
+
+```
 pip install git+https://github.com/agentkyo/gambipad
-sudo cp packaging/linux/70-gambipad.rules /etc/udev/rules.d/
-sudo udevadm control --reload && sudo udevadm trigger
 gambipad
 ```
 
-A regra do udev dá ao seu usuário acesso ao controle (hidraw) e ao `/dev/uinput`.
-
+No Windows, o pip pode abrir o instalador do ViGEmBus ao instalar a dependência `vgamepad`.
 ## Como usar
 
 `gambipad` abre a janela. Ao fechar, ele continua rodando na bandeja do sistema.

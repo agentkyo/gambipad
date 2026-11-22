@@ -70,6 +70,6 @@ With `touchpad.mode` set to `buttons`, the click becomes `touch_left` or `touch_
 | `touchpad.mode` | `native`, `mouse`, `buttons`, `off` |
 | `touchpad.drop_frozen` | ignore touches whose position never changes (clones without a touch sensor) |
 | macro `mode` | `once`, `hold` (repeat while held), `toggle` (repeat until pressed again) |
-| macro steps | `{"tap": target, "ms": n}`, `{"press": target}`, `{"release": target}`, `{"wait": ms}` |
+| macro steps | `{"tap": target, "ms": n}`, `{"press": target}`, `{"release": target}`, `{"wait": ms}`, `{"stick": "left"\|"right", "x": -1..1, "y": -1..1}` (hold a stick position; Y grows downwards), `{"stick": "left"\|"right", "off": true}` (give the stick back) |
 
-Anything a macro leaves pressed is released when the macro ends.
+Anything a macro leaves pressed, and any stick it holds, is released when the macro ends.

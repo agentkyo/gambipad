@@ -76,11 +76,12 @@ QLabel#status { font-size: 11pt; font-weight: bold; }
 """
 
 
-def app_icon() -> QIcon:
-    pix = QPixmap(64, 64)
+def icon_pixmap(size: int = 64) -> QPixmap:
+    pix = QPixmap(size, size)
     pix.fill(Qt.transparent)
     p = QPainter(pix)
     p.setRenderHint(QPainter.Antialiasing)
+    p.scale(size / 64, size / 64)
     p.setPen(Qt.NoPen)
     p.setBrush(QColor("#1f8f76"))
     p.drawRoundedRect(4, 16, 56, 34, 16, 16)
@@ -90,7 +91,11 @@ def app_icon() -> QIcon:
     p.drawEllipse(40, 25, 7, 7)
     p.drawEllipse(47, 33, 7, 7)
     p.end()
-    return QIcon(pix)
+    return pix
+
+
+def app_icon() -> QIcon:
+    return QIcon(icon_pixmap(64))
 
 
 def hint(text: str, name: str = "hint") -> QLabel:

@@ -34,3 +34,43 @@ jobs:
           pip install hidapi PySide6 pytest
           pip install -e . --no-deps
       - run: python -m pytest -q
+
+  # Runs install.sh from scratch on each distribution family it claims to support.
+  linux-installer:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu (also Zorin OS and Debian)
+            image: ubuntu:24.04
+            prepare: apt-get update && apt-get install -y ca-certificates
+            args: ""
+          - name: Fedora
+            image: fedora:latest
+            prepare: dnf install -y tar gzip
+            args: ""
+          - name: Arch (also CachyOS)
+            image: archlinux:latest
+            prepare: pacman -Syu --noconfirm tar gzip
+            args: ""
+          - name: No compiler, no package manager (Bazzite-like)
+            image: fedora:latest
+            prepare: dnf install -y tar gzip python3 python3-pip libxkbcommon mesa-libEGL libglvnd-glx fontconfig
+            args: "--no-system"
+    name: "install.sh: ${{ matrix.name }}"
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    steps:
+      - run: ${{ matrix.prepare }}
+      - uses: actions/checkout@v4
+      - name: Install
+        run: GAMBIPAD_SOURCE="$PWD" bash install.sh --autostart ${{ matrix.args }}
+      - name: Check the installation
+        run: |
+          ~/.local/bin/gambipad --version
+          ~/.local/bin/gambipad doctor
+          test -s ~/.local/share/icons/hicolor/256x256/apps/gambipad.png
+          grep -q minimized ~/.config/autostart/gambipad.desktop
+          QT_QPA_PLATFORM=offscreen ~/.local/share/gambipad/venv/bin/python -c "import gambipad.gui.app, evdev, hid; print('imports ok')"
+      - name: Uninstall
+        run: bash install.sh --uninstall ${{ matrix.args }} && test ! -e ~/.local/share/gambipad

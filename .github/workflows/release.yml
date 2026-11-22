@@ -1,0 +1,59 @@
+name: Release
+
+# Pushing a tag like v0.1.0 builds the Windows installer and publishes a release.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install hidapi PySide6 pytest pyinstaller
+          pip install -e . --no-deps
+          # vgamepad's setup opens the interactive ViGEmBus installer, which
+          # would hang the runner. Only its package folder is needed, so it is
+          # unpacked from the source archive straight into site-packages.
+          pip download vgamepad==0.2.0 --no-deps --no-binary :all: -d vg
+          tar -xzf (Get-ChildItem vg\*.tar.gz).FullName -C vg
+          $site = python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+          Copy-Item (Get-ChildItem vg -Directory | Select-Object -First 1 | Join-Path -ChildPath vgamepad) $site -Recurse
+          python -c "import os; assert os.path.exists(os.path.join(r'$site', 'vgamepad', 'win', 'vigem', 'client', 'x64', 'ViGEmClient.dll'))"
+      - run: python -m pytest -q
+        env:
+          QT_QPA_PLATFORM: offscreen
+      - name: Build the executable
+        run: python packaging/windows/build_exe.py
+      - name: Build the installer and the portable zip
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
+          & $iscc "/DAppVersion=$version" packaging\windows\gambipad.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path dist\GambiPad -DestinationPath "dist\GambiPad-$version-windows-x64-portable.zip"
+          Get-ChildItem dist -File
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = Get-ChildItem dist -File | ForEach-Object FullName
+          gh release view "${{ github.ref_name }}" 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "${{ github.ref_name }}" --title "GambiPad ${{ github.ref_name }}" --notes-file packaging/RELEASE_NOTES.md
+          }
+          gh release upload "${{ github.ref_name }}" $files --clobber
