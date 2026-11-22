@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gambipad"
+version = "0.1.0"
+description = "Open-source driver and configurator for DualShock 4 style controllers and their clones - fixes ghost buttons, remaps, macros, light bar and rumble. Windows & Linux."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "agentkyo", email = "caioviniciusxd@gmail.com" }]
+requires-python = ">=3.11"
+keywords = ["dualshock4", "ds4", "gamepad", "controller", "clone", "hid", "remap", "macro", "vigem", "uinput"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: Qt",
+    "Environment :: Win32 (MS Windows)",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+]
+dependencies = [
+    "hidapi>=0.14",
+    "PySide6>=6.6",
+    "vgamepad>=0.1; sys_platform == 'win32'",
+    "evdev>=1.6; sys_platform == 'linux'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/agentkyo/gambipad"
+Issues = "https://github.com/agentkyo/gambipad/issues"
+
+[project.scripts]
+gambipad = "gambipad.cli:main"
+
+[project.gui-scripts]
+gambipad-gui = "gambipad.cli:gui_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
