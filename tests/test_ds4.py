@@ -110,3 +110,12 @@ def test_bluetooth_output_crc():
     assert len(out) == 78 and out[0] == 0x11
     assert out[6:11] == bytes([1, 2, 3, 4, 5])
     assert struct.unpack_from("<I", out, 74)[0] == zlib.crc32(b"\xa2" + out[:74])
+
+
+def test_mac_normalization():
+    from gambipad.power import normalize_mac, power_off
+
+    assert normalize_mac("C4:F5:F8:51:6C:A1") == "c4f5f8516ca1"
+    assert normalize_mac("c4f5f8516ca1") == "c4f5f8516ca1"
+    assert normalize_mac("") == "" and normalize_mac(None) == "" and normalize_mac("1234") == ""
+    assert power_off("") is False

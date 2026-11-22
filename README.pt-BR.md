@@ -111,6 +111,7 @@ Linha de comando:
 | `gambipad monitor` | mostra o que o controle envia |
 | `gambipad diagnose --apply` | procura botões fantasmas e salva a correção |
 | `gambipad rumble` | testa os dois motores |
+| `gambipad off` | desliga um controle Bluetooth |
 | `gambipad doctor` | confere os requisitos do sistema |
 
 Os perfis ficam em `%APPDATA%\GambiPad\profiles` (Windows) ou

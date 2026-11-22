@@ -15,6 +15,7 @@ from . import ds4
 from .engine import Engine, lightbar_color
 from .hide import create_hider
 from .outputs import NullPad, create_keymouse, create_pad
+from .power import power_off
 from .profile import normalize
 from .state import Frame, PadState
 
@@ -64,6 +65,7 @@ class Driver:
         self.output_note = ""
         self.hide_note = ""
         self.defect = ""  # "smear" when the pad corrupts its own reports
+        self.serial = ""  # the Bluetooth address of the connected pad
         self.capture: list | None = None
 
         self._pending: dict | None = None
@@ -94,6 +96,18 @@ class Driver:
 
     def test_rumble(self, weak: int, strong: int, seconds: float = 0.6) -> None:
         self._test_rumble = (weak, strong, time.monotonic() + seconds)
+
+    @property
+    def can_power_off(self) -> bool:
+        return self.status == "running" and self.bluetooth and bool(self.serial)
+
+    def power_off(self) -> bool:
+        """Switch a Bluetooth pad off. A cabled pad cannot be switched off."""
+        if not self.can_power_off:
+            return False
+        done = power_off(self.serial)
+        self.log("controller switched off" if done else "could not switch the controller off")
+        return done
 
     def start_capture(self) -> None:
         self.capture = []
@@ -145,6 +159,7 @@ class Driver:
         device.open_path(info["path"])
         self.device_name = f"{info.get('product_string') or 'Controller'} ({info['model']})"
         self.bluetooth = info.get("bus_type") == 2
+        self.serial = info.get("serial_number") or ""
         try:  # asks a Bluetooth pad to switch to full reports; harmless on USB
             device.get_feature_report(0x02, 64)
         except (OSError, ValueError):

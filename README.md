@@ -111,6 +111,7 @@ Command line:
 | `gambipad monitor` | print what the controller reports |
 | `gambipad diagnose --apply` | find ghost buttons and save the fix |
 | `gambipad rumble` | test both motors |
+| `gambipad off` | switch a Bluetooth controller off |
 | `gambipad doctor` | check the system requirements |
 
 Profiles live in `%APPDATA%\GambiPad\profiles` (Windows) or

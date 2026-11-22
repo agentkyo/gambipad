@@ -165,6 +165,18 @@ def cmd_doctor(args) -> int:
     return 0
 
 
+def cmd_off(args) -> int:
+    from .power import power_off
+
+    pads = [d for d in find_devices(profiles.load_settings()["extra_devices"]) if d.get("bus_type") == 2]
+    if not pads:
+        print("No Bluetooth controller connected (a cabled one cannot be switched off).")
+        return 1
+    done = [power_off(d.get("serial_number")) for d in pads]
+    print("Controller switched off." if all(done) else "Could not switch the controller off.")
+    return 0 if all(done) else 1
+
+
 def cmd_unhide(args) -> int:
     from .hide import create_hider
 
@@ -202,6 +214,7 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_diagnose)
     sub.add_parser("rumble", help="test both rumble motors").set_defaults(func=cmd_rumble)
     sub.add_parser("doctor", help="check the system requirements").set_defaults(func=cmd_doctor)
+    sub.add_parser("off", help="switch a Bluetooth controller off").set_defaults(func=cmd_off)
     sub.add_parser("unhide", help="make the real controller visible again after a crash").set_defaults(func=cmd_unhide)
     args = parser.parse_args(argv)
     if getattr(args, "seconds", 0) and args.command == "run":

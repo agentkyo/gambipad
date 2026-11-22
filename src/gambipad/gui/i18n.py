@@ -51,6 +51,10 @@ PT = {
     "Pick two or more buttons that must be held together:": "Escolha dois ou mais botões que precisam ser segurados juntos:",
     # window
     "Open GambiPad": "Abrir o GambiPad",
+    "Turn controller off": "Desligar o controle",
+    "Works over Bluetooth. A cabled controller stays on while it is plugged in.": "Funciona por Bluetooth. No cabo, o controle fica ligado enquanto estiver conectado.",
+    "Only a Bluetooth controller can be turned off from here.": "Só dá para desligar por aqui um controle conectado por Bluetooth.",
+    "Windows refused to disconnect the controller.": "O Windows recusou desconectar o controle.",
     "Quit": "Sair",
     "Still running here in the tray. Right-click to quit.": "Continuo rodando aqui na bandeja. Clique com o botão direito para sair.",
     "Profile": "Perfil",

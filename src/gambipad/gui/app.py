@@ -142,6 +142,7 @@ class MainWindow(QMainWindow):
             self.tray = QSystemTrayIcon(app_icon(), self)
             menu = QMenu()
             menu.addAction(tr("Open GambiPad"), self._show)
+            menu.addAction(tr("Turn controller off"), self._power_off)
             menu.addAction(tr("Quit"), self._quit)
             self.tray.setContextMenu(menu)
             self.tray.setToolTip("GambiPad")
@@ -188,6 +189,18 @@ class MainWindow(QMainWindow):
         event.accept()
         QApplication.quit()
 
+    def _power_off(self) -> None:
+        if not getattr(self.driver, "can_power_off", False):
+            self._notify(tr("Only a Bluetooth controller can be turned off from here."))
+        elif not self.driver.power_off():
+            self._notify(tr("Windows refused to disconnect the controller."))
+
+    def _notify(self, text: str) -> None:
+        if self.isVisible():
+            QMessageBox.information(self, "GambiPad", text)
+        elif self.tray:
+            self.tray.showMessage("GambiPad", text)
+
     def _changed(self) -> None:
         """The profile dict was edited: apply it live and save soon."""
         self.profile = profiles.normalize(self.profile)
@@ -205,6 +218,10 @@ class MainWindow(QMainWindow):
         self.status.setObjectName("status")
         self.status.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         top.addWidget(self.status, 1)
+        self.power = QPushButton(tr("Turn controller off"))
+        self.power.setToolTip(tr("Works over Bluetooth. A cabled controller stays on while it is plugged in."))
+        self.power.clicked.connect(self._power_off)
+        top.addWidget(self.power)
         top.addWidget(QLabel(tr("Profile")))
         self.profile_box = QComboBox()
         self.profile_box.setMinimumWidth(160)
@@ -894,6 +911,7 @@ class MainWindow(QMainWindow):
         else:
             self.status.setText(f"🟡 {tr('Looking for a controller… plug it in.')}")
 
+        self.power.setEnabled(bool(getattr(driver, "can_power_off", False)))
         notes = []
         defect = getattr(driver, "defect", "")
         if defect == "smear":
