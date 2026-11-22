@@ -19,7 +19,7 @@ from .profile import normalize
 from .state import Frame, PadState
 
 READ_TIMEOUT_MS = 20
-RUMBLE_REFRESH = 0.5  # resend while a motor is on, some pads time out
+OUTPUT_REFRESH = 0.1  # resend light and rumble: clones forget a state that is sent only once
 LIGHT_REFRESH = 0.05  # animation step for the light bar
 SMEAR_REPORTS = 500  # unbroken run of corrupted reports before we call it a defect
 
@@ -219,7 +219,7 @@ class Driver:
                     weak, strong = self.engine.rumble(*self._game_rumble)
                 rgb = lightbar_color(self.engine.profile["lightbar"], self.raw, now)
                 wanted = (weak, strong, rgb)
-                stale = (weak or strong) and now - sent_at > RUMBLE_REFRESH
+                stale = now - sent_at > OUTPUT_REFRESH
                 if (wanted != sent and now - sent_at > LIGHT_REFRESH) or (wanted[:2] != (sent or (0, 0, 0))[:2]) or stale:
                     device.write(ds4.build_output(weak, strong, rgb, bluetooth=self.bluetooth))
                     sent, sent_at = wanted, now
